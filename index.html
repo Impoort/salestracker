@@ -296,6 +296,71 @@
   .show-more svg{width:14px;height:14px; transition:transform .2s ease;}
   .show-more.open svg{transform:rotate(180deg);}
 
+  /* ---------- Chart headline ---------- */
+  .chart-headline{padding:2px 4px 14px;}
+  .chart-headline .hl-label{font-size:12.5px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:0.03em;}
+  .chart-headline .hl-row{display:flex; align-items:baseline; gap:9px; margin-top:5px; flex-wrap:wrap;}
+  .chart-headline .hl-num{font-size:30px; font-weight:800; letter-spacing:-0.03em;}
+  .chart-headline .hl-delta{display:inline-flex; align-items:center; gap:3px; font-size:14px; font-weight:700; padding:2px 0;}
+  .chart-headline .hl-delta.up{color:var(--green);}
+  .chart-headline .hl-delta.down{color:var(--red);}
+  .chart-headline .hl-delta.flat{color:var(--text-2);}
+  .chart-headline .hl-delta svg{width:12px;height:12px;}
+  .chart-headline .hl-sub{font-size:12px; color:var(--text-2); margin-top:2px;}
+
+  .chart-legend{display:flex; gap:16px; margin-bottom:2px; padding:0 4px; cursor:pointer;}
+  .legend-item{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--text-2); padding:5px 9px; border-radius:20px; transition:all .12s ease;}
+  .legend-item.active{background:var(--bg-3); color:var(--text);}
+  .legend-dot{width:8px;height:8px;border-radius:50%; flex-shrink:0;}
+  .legend-dot.dotted{background:none; border:1.6px dashed currentColor; width:9px; height:9px;}
+
+  .chart-tooltip-box{
+    position:absolute; background:var(--text); color:#fff; border-radius:10px;
+    padding:8px 11px; font-size:11.5px; line-height:1.5; pointer-events:none;
+    white-space:nowrap; transform:translate(-50%,-100%); z-index:5;
+    box-shadow:0 4px 14px rgba(0,0,0,0.22);
+  }
+  .chart-tooltip-box .tt-date{font-weight:700; margin-bottom:2px; opacity:0.85; font-size:10.5px; text-transform:uppercase; letter-spacing:0.03em;}
+  .chart-tooltip-box .tt-row{display:flex; align-items:center; gap:5px;}
+  .chart-tooltip-box .tt-dot{width:6px;height:6px;border-radius:50%; flex-shrink:0;}
+
+  /* ---------- Delete buttons on rows ---------- */
+  .row-del{
+    width:30px; height:30px; border-radius:50%; border:none; background:var(--bg-3);
+    color:var(--text-2); display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; cursor:pointer; margin-left:2px;
+  }
+  .row-del svg{width:14px;height:14px;}
+  .row-del:active{background:var(--red-tint); color:var(--red);}
+  .txn{padding-right:2px;}
+
+  /* ---------- Reason suggestions ---------- */
+  .reason-suggest{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;}
+  .reason-chip{
+    background:var(--bg-3); border:none; border-radius:16px; padding:8px 13px;
+    font-size:12.5px; font-weight:600; color:var(--text); cursor:pointer; font-family:inherit;
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .reason-chip:active{background:var(--blue-tint); color:var(--blue-dark);}
+
+  /* ---------- Stock history ---------- */
+  .hist-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .hist-row:last-child{border-bottom:none;}
+  .hist-row img{width:34px; height:34px; object-fit:contain; border-radius:9px; background:#fff; box-shadow:var(--shadow); padding:4px; flex-shrink:0;}
+  .hist-info{flex:1; min-width:0;}
+  .hist-info .t1{font-weight:600; font-size:13.5px;}
+  .hist-info .t2{font-size:12px; color:var(--text-2); margin-top:1px;}
+  .hist-amt{font-weight:700; font-size:13.5px; color:var(--text-2); flex-shrink:0;}
+
+  /* ---------- Confirm sheet ---------- */
+  .confirm-icon{
+    width:52px; height:52px; border-radius:50%; background:var(--red-tint); color:var(--red);
+    display:flex; align-items:center; justify-content:center; margin:6px auto 16px;
+  }
+  .confirm-icon svg{width:24px;height:24px;}
+  .confirm-title{font-size:18px; font-weight:800; text-align:center; margin-bottom:6px; letter-spacing:-0.01em;}
+  .confirm-msg{font-size:14px; color:var(--text-2); text-align:center; line-height:1.5; margin-bottom:22px;}
+
   ::-webkit-scrollbar{display:none;}
 </style>
 </head>
@@ -366,12 +431,20 @@
       <button class="seg-btn" data-range="alltime">All Time</button>
     </div>
 
-    <div class="chart-wrap">
-      <div class="chart-legend">
-        <div class="legend-item"><span class="legend-dot" style="background:var(--blue);"></span>Revenue</div>
-        <div class="legend-item"><span class="legend-dot" style="background:var(--green);"></span>Profit</div>
+    <div class="chart-wrap" style="position:relative;">
+      <div class="chart-headline">
+        <div class="hl-label" id="hlLabel">Revenue</div>
+        <div class="hl-row">
+          <div class="hl-num" id="hlNum">€0</div>
+          <div class="hl-delta flat" id="hlDelta"></div>
+        </div>
+        <div class="hl-sub" id="hlSub">vs previous period</div>
       </div>
-      <div id="chartHolder"></div>
+      <div class="chart-legend">
+        <div class="legend-item active" id="legendRevenue" data-metric="revenue"><span class="legend-dot" style="background:var(--blue);"></span>Revenue</div>
+        <div class="legend-item" id="legendProfit" data-metric="profit"><span class="legend-dot dotted" style="color:var(--green);"></span>Profit</div>
+      </div>
+      <div id="chartHolder" style="position:relative;"></div>
     </div>
 
     <div class="stat-grid">
@@ -461,6 +534,32 @@
   </div>
 </div>
 
+<!-- STOCK HISTORY SHEET -->
+<div class="sheet" id="sheetHistory">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="title" id="historyTitle">Stock History</div>
+    <button class="icon-btn" id="closeHistory">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<!-- CONFIRM SHEET -->
+<div class="sheet" id="sheetConfirm">
+  <div class="sheet-handle"></div>
+  <div class="confirm-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+  </div>
+  <div class="confirm-title" id="confirmTitle">Delete this entry?</div>
+  <div class="confirm-msg" id="confirmMessage">This can't be undone.</div>
+  <div class="sheet-footer">
+    <button class="btn btn-secondary" id="confirmCancel">Cancel</button>
+    <button class="btn btn-danger" id="confirmDelete">Delete</button>
+  </div>
+</div>
+
 <script>
 (function(){
 
@@ -521,11 +620,45 @@ document.querySelectorAll('.tab').forEach(tab=>{
 const backdrop = document.getElementById('backdrop');
 const sheetSale = document.getElementById('sheetSale');
 const sheetStock = document.getElementById('sheetStock');
+const sheetHistory = document.getElementById('sheetHistory');
+const sheetConfirm = document.getElementById('sheetConfirm');
+const ALL_SHEETS = [sheetSale, sheetStock, sheetHistory, sheetConfirm];
 function openSheet(sheet){ backdrop.classList.add('open'); sheet.classList.add('open'); document.body.style.overflow='hidden'; }
 function closeSheet(sheet){ backdrop.classList.remove('open'); sheet.classList.remove('open'); document.body.style.overflow=''; }
-backdrop.addEventListener('click', ()=>{ closeSheet(sheetSale); closeSheet(sheetStock); });
+function closeAllSheets(){ ALL_SHEETS.forEach(closeSheet); }
+backdrop.addEventListener('click', closeAllSheets);
 document.getElementById('closeSale').addEventListener('click', ()=>closeSheet(sheetSale));
 document.getElementById('closeStock').addEventListener('click', ()=>closeSheet(sheetStock));
+document.getElementById('closeHistory').addEventListener('click', ()=>closeSheet(sheetHistory));
+
+// ============= GENERIC CONFIRM DIALOG =============
+let confirmCallback = null;
+function openConfirm(title, message, cb){
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMessage').textContent = message;
+  confirmCallback = cb;
+  openSheet(sheetConfirm);
+}
+document.getElementById('confirmCancel').addEventListener('click', ()=>closeSheet(sheetConfirm));
+document.getElementById('confirmDelete').addEventListener('click', ()=>{
+  const cb = confirmCallback;
+  closeSheet(sheetConfirm);
+  if(cb) cb();
+});
+
+// ============= REASON SUGGESTIONS =============
+function getReasonSuggestions(){
+  const counts = {};
+  DATA.transactions.forEach(t=>{
+    if(t.bought || !t.reason || !t.reason.trim()) return;
+    const label = t.reason.trim();
+    const norm = label.toLowerCase();
+    if(!counts[norm]) counts[norm] = {label, count:0, lastTs:0};
+    counts[norm].count++;
+    if(t.ts>counts[norm].lastTs) counts[norm].lastTs = t.ts;
+  });
+  return Object.values(counts).sort((a,b)=> b.count-a.count || b.lastTs-a.lastTs).slice(0,6);
+}
 
 // ============= ADD SALE WIZARD =============
 let sale = {};
@@ -589,10 +722,22 @@ function renderSaleStep(){
   }
 
   else if(step==='reason'){
+    const suggestions = getReasonSuggestions();
     content.innerHTML = `
       <div class="field-label">Why didn't they buy?</div>
-      <textarea id="reasonInput" rows="3" placeholder="e.g. Too expensive, already has a system...">${sale.reason||''}</textarea>`;
+      <textarea id="reasonInput" rows="3" placeholder="e.g. Too expensive, already has a system...">${sale.reason||''}</textarea>
+      ${suggestions.length ? `<div class="reason-suggest" id="reasonSuggest">${suggestions.map(s=>`<button type="button" class="reason-chip" data-r="${escapeHtml(s.label)}">${escapeHtml(s.label)}</button>`).join('')}</div>` : ''}`;
     document.getElementById('reasonInput').addEventListener('input', e=>{ sale.reason=e.target.value; updateSaleFooter(); });
+    const chipsWrap = document.getElementById('reasonSuggest');
+    if(chipsWrap){
+      chipsWrap.querySelectorAll('.reason-chip').forEach(chip=>{
+        chip.addEventListener('click', ()=>{
+          sale.reason = chip.dataset.r;
+          document.getElementById('reasonInput').value = sale.reason;
+          updateSaleFooter();
+        });
+      });
+    }
   }
 
   else if(step==='cardType'){
@@ -626,7 +771,7 @@ function renderSaleStep(){
     content.innerHTML = `
       <div class="field-label">Cost of Card</div>
       <div class="euro-input"><span>€</span><input type="number" id="costInput" inputmode="decimal" value="${sale.cost!==null?sale.cost:''}"></div>
-      <div class="hint">${ppp>0 ? 'Prefilled from your inventory price per piece — edit if needed.' : 'No inventory price yet — enter the cost manually.'}</div>`;
+      <div class="hint">${ppp>0 ? 'Prefilled from your inventory price per piece — edit if needed.' : 'No inventory price yet — enter the cost manually.'} Profit is calculated from total inventory spend, not this figure.</div>`;
     const inp = document.getElementById('costInput');
     inp.addEventListener('input', e=>{ sale.cost = e.target.value===''?null:parseFloat(e.target.value); updateSaleFooter(); });
   }
@@ -755,6 +900,7 @@ function renderTrack(){
     list.innerHTML = `<div class="empty"><div class="emoji">📋</div><div class="t1">No activity yet</div><div class="t2">Tap "+ Add Sale" to log your first pitch.</div></div>`;
     return;
   }
+  const delIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>`;
   list.innerHTML = recent.map(t=>{
     const time = new Date(t.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
     if(t.bought){
@@ -762,15 +908,38 @@ function renderTrack(){
         <div class="txn-icon yes">✓</div>
         <div class="txn-main"><div class="t1">${t.business} · ${CARD_META[t.cardType].name}</div><div class="t2">${time}</div></div>
         <div class="txn-amt green">+${fmtEuro(t.soldFor)}</div>
+        <button class="row-del" data-id="${t.id}" aria-label="Delete">${delIcon}</button>
       </div>`;
     } else {
       return `<div class="txn">
         <div class="txn-icon no">✕</div>
-        <div class="txn-main"><div class="t1">${t.business}</div><div class="t2">${t.reason} · ${time}</div></div>
+        <div class="txn-main"><div class="t1">${t.business}</div><div class="t2">${escapeHtml(t.reason)} · ${time}</div></div>
         <div class="txn-amt grey">No sale</div>
+        <button class="row-del" data-id="${t.id}" aria-label="Delete">${delIcon}</button>
       </div>`;
     }
   }).join('');
+  list.querySelectorAll('.row-del').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = btn.dataset.id;
+      const t = DATA.transactions.find(x=>x.id===id);
+      if(!t) return;
+      const msg = t.bought ? `Delete this ${fmtEuro(t.soldFor)} sale to ${t.business}? Stock will be restored.` : `Delete this pitch to ${t.business}?`;
+      openConfirm('Delete this entry?', msg, ()=> deleteSale(id));
+    });
+  });
+}
+
+function deleteSale(id){
+  const idx = DATA.transactions.findIndex(t=>t.id===id);
+  if(idx===-1) return;
+  const t = DATA.transactions[idx];
+  if(t.bought && t.cardType && DATA.inventory[t.cardType]){
+    DATA.inventory[t.cardType].stock += 1;
+  }
+  DATA.transactions.splice(idx,1);
+  saveData();
+  renderTrack(); renderInventory(); renderStats();
 }
 
 // ============= RENDER: INVENTORY =============
@@ -782,7 +951,8 @@ function renderInventory(){
     const ppp = pricePerPiece(type);
     const stockClass = inv.stock===0 ? 'out' : (inv.stock<10 ? 'low' : 'ok');
     const stockLabel = inv.stock===0 ? 'Out of stock' : inv.stock+' in stock';
-    return `<div class="inv-card">
+    const histCount = inv.purchases.length;
+    return `<div class="inv-card" data-type="${type}" style="flex-wrap:wrap;">
       <img src="${CARD_META[type].img}">
       <div class="inv-info">
         <div class="name">${CARD_META[type].name}</div>
@@ -791,8 +961,61 @@ function renderInventory(){
         </div>
       </div>
       <div class="stock-pill ${stockClass}">${stockLabel}</div>
+      ${histCount>0 ? `<button class="btn-ghost inv-hist-btn" data-type="${type}" style="width:100%; text-align:left; padding:6px 0 0; font-size:12.5px; font-weight:700;">View history (${histCount}) ›</button>` : ''}
     </div>`;
   }).join('');
+  list.querySelectorAll('.inv-hist-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openHistorySheet(btn.dataset.type));
+  });
+}
+
+function openHistorySheet(type){
+  document.getElementById('historyTitle').textContent = CARD_META[type].name + ' History';
+  renderHistoryList(type);
+  openSheet(sheetHistory);
+}
+
+function renderHistoryList(type){
+  const el = document.getElementById('historyList');
+  const inv = DATA.inventory[type];
+  const purchases = [...inv.purchases].sort((a,b)=>b.ts-a.ts);
+  if(purchases.length===0){
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">📦</div><div class="t1">No stock added yet</div></div>`;
+    return;
+  }
+  const delIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>`;
+  el.innerHTML = purchases.map(p=>{
+    const time = new Date(p.ts).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});
+    const ppp = p.totalPrice/p.qty;
+    return `<div class="hist-row">
+      <img src="${CARD_META[type].img}">
+      <div class="hist-info">
+        <div class="t1">${p.qty} cards · ${fmtEuro(p.totalPrice)}</div>
+        <div class="t2">${time} · ${fmtEuro(ppp)}/card</div>
+      </div>
+      <button class="row-del" data-id="${p.id}" aria-label="Delete">${delIcon}</button>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.row-del').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const pid = btn.dataset.id;
+      const p = inv.purchases.find(x=>x.id===pid);
+      if(!p) return;
+      openConfirm('Remove this stock entry?', `This removes ${p.qty} cards and ${fmtEuro(p.totalPrice)} from ${CARD_META[type].name} inventory history.`, ()=> deletePurchase(type, pid));
+    });
+  });
+}
+
+function deletePurchase(type, purchaseId){
+  const inv = DATA.inventory[type];
+  const idx = inv.purchases.findIndex(p=>p.id===purchaseId);
+  if(idx===-1) return;
+  const p = inv.purchases[idx];
+  inv.stock = Math.max(0, inv.stock - p.qty);
+  inv.purchases.splice(idx,1);
+  saveData();
+  renderInventory(); renderStats(); renderTrack();
+  if(sheetHistory.classList.contains('open')) renderHistoryList(type);
 }
 
 // ============= RENDER: STATS =============
@@ -802,8 +1025,23 @@ document.querySelectorAll('.seg-btn').forEach(btn=>{
     document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentRange = btn.dataset.range;
+    selectedPointIndex = null;
     renderStats();
   });
+});
+
+let headlineMetric = 'revenue';
+document.getElementById('legendRevenue').addEventListener('click', ()=>{
+  headlineMetric = 'revenue';
+  document.getElementById('legendRevenue').classList.add('active');
+  document.getElementById('legendProfit').classList.remove('active');
+  renderStats();
+});
+document.getElementById('legendProfit').addEventListener('click', ()=>{
+  headlineMetric = 'profit';
+  document.getElementById('legendProfit').classList.add('active');
+  document.getElementById('legendRevenue').classList.remove('active');
+  renderStats();
 });
 
 function getBuckets(range){
@@ -814,26 +1052,26 @@ function getBuckets(range){
     for(let h=0;h<24;h++){
       const s = new Date(start); s.setHours(h);
       const e = new Date(start); e.setHours(h+1);
-      buckets.push({label: (h%4===0? (h+':00'):''), start:s.getTime(), end:e.getTime()});
+      buckets.push({label: (h%4===0? (h+':00'):''), fullLabel: s.toLocaleTimeString(undefined,{hour:'numeric', minute:'2-digit'}), start:s.getTime(), end:e.getTime()});
     }
   } else if(range==='weekly'){
     for(let i=6;i>=0;i--){
       const d = new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);
       const e = new Date(now.getFullYear(),now.getMonth(),now.getDate()-i+1);
-      buckets.push({label:d.toLocaleDateString(undefined,{weekday:'short'}), start:d.getTime(), end:e.getTime()});
+      buckets.push({label:d.toLocaleDateString(undefined,{weekday:'short'}), fullLabel:d.toLocaleDateString(undefined,{weekday:'short', month:'short', day:'numeric'}), start:d.getTime(), end:e.getTime()});
     }
   } else if(range==='monthly'){
     const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
     for(let d=1; d<=daysInMonth; d++){
       const s = new Date(now.getFullYear(), now.getMonth(), d);
       const e = new Date(now.getFullYear(), now.getMonth(), d+1);
-      buckets.push({label:(d===1||d%5===0)?String(d):'', start:s.getTime(), end:e.getTime()});
+      buckets.push({label:(d===1||d%5===0)?String(d):'', fullLabel:s.toLocaleDateString(undefined,{month:'short', day:'numeric'}), start:s.getTime(), end:e.getTime()});
     }
   } else if(range==='yearly'){
     for(let m=0;m<12;m++){
       const s = new Date(now.getFullYear(), m, 1);
       const e = new Date(now.getFullYear(), m+1, 1);
-      buckets.push({label:s.toLocaleDateString(undefined,{month:'short'}), start:s.getTime(), end:e.getTime()});
+      buckets.push({label:s.toLocaleDateString(undefined,{month:'short'}), fullLabel:s.toLocaleDateString(undefined,{month:'long', year:'numeric'}), start:s.getTime(), end:e.getTime()});
     }
   } else { // alltime
     let minTs = Date.now();
@@ -848,44 +1086,189 @@ function getBuckets(range){
     while(cur < endMonth && guard<240){
       const s = new Date(cur);
       const e = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
-      buckets.push({label:s.toLocaleDateString(undefined,{month:'short', year: s.getFullYear()!==now.getFullYear() ? '2-digit': undefined}), start:s.getTime(), end:e.getTime()});
+      buckets.push({label:s.toLocaleDateString(undefined,{month:'short', year: s.getFullYear()!==now.getFullYear() ? '2-digit': undefined}), fullLabel:s.toLocaleDateString(undefined,{month:'long', year:'numeric'}), start:s.getTime(), end:e.getTime()});
       cur = e; guard++;
     }
     if(buckets.length===0){
       const s = new Date(now.getFullYear(), now.getMonth(),1);
       const e = new Date(now.getFullYear(), now.getMonth()+1,1);
-      buckets.push({label:s.toLocaleDateString(undefined,{month:'short'}), start:s.getTime(), end:e.getTime()});
+      buckets.push({label:s.toLocaleDateString(undefined,{month:'short'}), fullLabel:s.toLocaleDateString(undefined,{month:'long', year:'numeric'}), start:s.getTime(), end:e.getTime()});
     }
   }
   return buckets;
 }
 
-function renderChart(buckets, revData, profData){
-  const holder = document.getElementById('chartHolder');
-  const w = Math.max(320, buckets.length*34);
-  const h = 150;
-  const padB = 22, padT = 10;
-  const maxVal = Math.max(1, ...revData, ...profData);
-  const barW = (w/buckets.length) * 0.42;
-  const groupW = w/buckets.length;
+// previous-period range, aligned to same length, ending right before periodStart
+function getPrevPeriodRange(range, periodStart, periodEnd){
+  if(range==='alltime') return null;
+  const len = periodEnd - periodStart;
+  if(range==='monthly'){
+    const s = new Date(periodStart);
+    const prevMonthStart = new Date(s.getFullYear(), s.getMonth()-1, 1);
+    const prevMonthEnd = new Date(s.getFullYear(), s.getMonth(), 1);
+    return {start:prevMonthStart.getTime(), end:prevMonthEnd.getTime()};
+  }
+  if(range==='yearly'){
+    const s = new Date(periodStart);
+    const prevYearStart = new Date(s.getFullYear()-1, 0, 1);
+    const prevYearEnd = new Date(s.getFullYear(), 0, 1);
+    return {start:prevYearStart.getTime(), end:prevYearEnd.getTime()};
+  }
+  return {start: periodStart-len, end: periodStart};
+}
 
-  let bars = '';
+// Catmull-Rom -> cubic bezier smoothing
+function smoothPath(pts){
+  if(pts.length<2) return `M ${pts[0].x} ${pts[0].y}`;
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0 = pts[i-1] || pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i+1];
+    const p3 = pts[i+2] || p2;
+    const cp1x = p1.x + (p2.x-p0.x)/6;
+    const cp1y = p1.y + (p2.y-p0.y)/6;
+    const cp2x = p2.x - (p3.x-p1.x)/6;
+    const cp2y = p2.y - (p3.y-p1.y)/6;
+    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  }
+  return d;
+}
+
+let selectedPointIndex = null;
+let lastChartBuckets = null, lastChartRev = null, lastChartProf = null;
+
+function renderChart(buckets, revData, profData){
+  lastChartBuckets = buckets; lastChartRev = revData; lastChartProf = profData;
+  const holder = document.getElementById('chartHolder');
+  const w = Math.max(340, buckets.length*30);
+  const h = 168;
+  const padT = 14, padB = 26, padL = 4, padR = 4;
+  const innerW = w-padL-padR, innerH = h-padT-padB;
+  const maxVal = Math.max(1, ...revData, ...profData) * 1.12;
+  const minVal = Math.min(0, ...profData);
+  const range = maxVal-minVal || 1;
+
+  const xFor = i => padL + (buckets.length===1 ? innerW/2 : (i/(buckets.length-1))*innerW);
+  const yFor = v => padT + innerH - ((v-minVal)/range)*innerH;
+
+  const revPts = revData.map((v,i)=>({x:xFor(i), y:yFor(v)}));
+  const profPts = profData.map((v,i)=>({x:xFor(i), y:yFor(v)}));
+
+  const revPath = smoothPath(revPts);
+  const profPath = smoothPath(profPts);
+  const zeroY = yFor(0);
+  const areaPath = `${revPath} L ${revPts[revPts.length-1].x.toFixed(2)} ${zeroY.toFixed(2)} L ${revPts[0].x.toFixed(2)} ${zeroY.toFixed(2)} Z`;
+
+  let xLabels = '';
   buckets.forEach((b,i)=>{
-    const x = i*groupW + groupW/2;
-    const rH = (revData[i]/maxVal) * (h-padB-padT);
-    const pH = (profData[i]/maxVal) * (h-padB-padT);
-    const rY = h-padB-rH;
-    const pY = h-padB-pH;
-    bars += `<rect x="${x-barW-1}" y="${rY}" width="${barW}" height="${Math.max(rH,revData[i]>0?2:0)}" rx="3" fill="var(--blue)"/>`;
-    bars += `<rect x="${x+1}" y="${pY}" width="${barW}" height="${Math.max(pH,profData[i]>0?2:0)}" rx="3" fill="var(--green)"/>`;
-    if(b.label) bars += `<text x="${x}" y="${h-6}" font-size="9.5" fill="#8A8F98" text-anchor="middle" font-family="-apple-system,sans-serif">${b.label}</text>`;
+    if(b.label) xLabels += `<text x="${xFor(i).toFixed(2)}" y="${h-8}" font-size="9.5" fill="#8A8F98" text-anchor="middle" font-family="-apple-system,sans-serif">${b.label}</text>`;
   });
 
-  holder.innerHTML = `<div style="overflow-x:auto;"><svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;">
-    <line x1="0" y1="${h-padB}" x2="${w}" y2="${h-padB}" stroke="#E6E9EF" stroke-width="1"/>
-    ${bars}
-  </svg></div>`;
+  let gridLines = '';
+  for(let g=0; g<=2; g++){
+    const gy = padT + (innerH/2)*g;
+    gridLines += `<line x1="${padL}" y1="${gy.toFixed(2)}" x2="${w-padR}" y2="${gy.toFixed(2)}" stroke="#E6E9EF" stroke-width="1"/>`;
+  }
+
+  let hitAreas = '';
+  buckets.forEach((b,i)=>{
+    hitAreas += `<circle class="chart-hit" data-idx="${i}" cx="${revPts[i].x.toFixed(2)}" cy="${revPts[i].y.toFixed(2)}" r="14" fill="transparent" style="cursor:pointer;"/>`;
+  });
+
+  let selMarker = '';
+  if(selectedPointIndex!==null && selectedPointIndex<buckets.length){
+    const i = selectedPointIndex;
+    selMarker = `<line x1="${revPts[i].x.toFixed(2)}" y1="${padT}" x2="${revPts[i].x.toFixed(2)}" y2="${h-padB}" stroke="#C6CBD3" stroke-width="1" stroke-dasharray="2,3"/>
+      <circle cx="${revPts[i].x.toFixed(2)}" cy="${revPts[i].y.toFixed(2)}" r="4.5" fill="var(--blue)" stroke="#fff" stroke-width="2"/>
+      <circle cx="${profPts[i].x.toFixed(2)}" cy="${profPts[i].y.toFixed(2)}" r="4.5" fill="var(--green)" stroke="#fff" stroke-width="2"/>`;
+  }
+
+  holder.innerHTML = `<div style="position:relative;" id="chartOuter">
+    <div style="overflow-x:auto; overflow-y:visible;" id="chartScroll">
+      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block;" id="chartSvg">
+        <defs>
+          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--blue)" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        ${gridLines}
+        <path d="${areaPath}" fill="url(#revGrad)"/>
+        <path d="${profPath}" fill="none" stroke="var(--green)" stroke-width="2" stroke-dasharray="4,4" stroke-linecap="round"/>
+        <path d="${revPath}" fill="none" stroke="var(--blue)" stroke-width="2.4" stroke-linecap="round"/>
+        ${xLabels}
+        ${selMarker}
+        ${hitAreas}
+      </svg>
+    </div>
+    <div id="chartTooltip"></div>
+  </div>`;
+
+  holder.querySelectorAll('.chart-hit').forEach(hit=>{
+    hit.addEventListener('click', (e)=>{
+      const idx = parseInt(hit.dataset.idx);
+      const prevScroll = document.getElementById('chartScroll') ? document.getElementById('chartScroll').scrollLeft : 0;
+      selectedPointIndex = (selectedPointIndex===idx) ? null : idx;
+      renderChart(lastChartBuckets, lastChartRev, lastChartProf);
+      const newScrollEl = document.getElementById('chartScroll');
+      if(newScrollEl) newScrollEl.scrollLeft = prevScroll;
+      showChartTooltip(idx);
+    });
+  });
+
+  const scrollEl = document.getElementById('chartScroll');
+  if(scrollEl) scrollEl.addEventListener('scroll', ()=>{
+    const tt=document.getElementById('chartTooltip'); if(tt) tt.innerHTML='';
+  }, {passive:true});
+
+  if(selectedPointIndex!==null) showChartTooltip(selectedPointIndex);
 }
+
+function showChartTooltip(idx){
+  if(selectedPointIndex===null){ const tt=document.getElementById('chartTooltip'); if(tt) tt.innerHTML=''; return; }
+  const b = lastChartBuckets[idx];
+  const rev = lastChartRev[idx];
+  const prof = lastChartProf[idx];
+  const svg = document.getElementById('chartSvg');
+  const scrollEl = document.getElementById('chartScroll');
+  if(!svg || !scrollEl) return;
+  const w = parseFloat(svg.getAttribute('width'));
+  const buckets = lastChartBuckets;
+  const padL=4, padR=4;
+  const innerW = w-padL-padR;
+  const x = padL + (buckets.length===1 ? innerW/2 : (idx/(buckets.length-1))*innerW);
+  const scrollLeft = scrollEl.scrollLeft;
+  let left = x - scrollLeft;
+  left = Math.max(30, Math.min(left, scrollEl.clientWidth-30));
+  const tt = document.getElementById('chartTooltip');
+  tt.className = 'chart-tooltip-box';
+  tt.style.left = left+'px';
+  tt.style.top = '4px';
+  tt.innerHTML = `<div class="tt-date">${b.fullLabel}</div>
+    <div class="tt-row"><span class="tt-dot" style="background:var(--blue);"></span>Revenue: ${fmtEuro(rev)}</div>
+    <div class="tt-row"><span class="tt-dot" style="background:var(--green);"></span>Profit: ${fmtEuro(prof)}</div>`;
+}
+
+function inventorySpentInRange(start, end){
+  let spent = 0;
+  Object.values(DATA.inventory).forEach(inv=>{
+    inv.purchases.forEach(p=>{ if(p.ts>=start && p.ts<end) spent += p.totalPrice; });
+  });
+  return spent;
+}
+function revenueInRange(start, end){
+  return DATA.transactions.filter(t=>t.bought && t.ts>=start && t.ts<end).reduce((s,t)=>s+t.soldFor,0);
+}
+
+const RANGE_HL_LABELS = {
+  daily:{revenue:"Today's Revenue", profit:"Today's Profit"},
+  weekly:{revenue:"This Week's Revenue", profit:"This Week's Profit"},
+  monthly:{revenue:"This Month's Revenue", profit:"This Month's Profit"},
+  yearly:{revenue:"This Year's Revenue", profit:"This Year's Profit"},
+  alltime:{revenue:"All-Time Revenue", profit:"All-Time Profit"}
+};
+const RANGE_PREV_LABELS = {daily:"yesterday", weekly:"last week", monthly:"last month", yearly:"last year", alltime:""};
 
 function renderStats(){
   const buckets = getBuckets(currentRange);
@@ -896,20 +1279,14 @@ function renderStats(){
   const boughtTxns = txns.filter(t=>t.bought);
   const notBoughtTxns = txns.filter(t=>!t.bought);
 
-  const revData = buckets.map(b=>{
-    return DATA.transactions.filter(t=>t.bought && t.ts>=b.start && t.ts<b.end).reduce((s,t)=>s+t.soldFor,0);
-  });
-  const profData = buckets.map(b=>{
-    return DATA.transactions.filter(t=>t.bought && t.ts>=b.start && t.ts<b.end).reduce((s,t)=>s+(t.soldFor-t.cost),0);
-  });
+  const revData = buckets.map(b=> revenueInRange(b.start, b.end));
+  const invSpentByBucket = buckets.map(b=> inventorySpentInRange(b.start, b.end));
+  const profData = revData.map((v,i)=> v - invSpentByBucket[i]);
   renderChart(buckets, revData, profData);
 
   const totalRevenue = boughtTxns.reduce((s,t)=>s+t.soldFor,0);
-  const totalProfit = boughtTxns.reduce((s,t)=>s+(t.soldFor-t.cost),0);
-  let inventorySpent = 0;
-  Object.values(DATA.inventory).forEach(inv=>{
-    inv.purchases.forEach(p=>{ if(p.ts>=periodStart && p.ts<periodEnd) inventorySpent += p.totalPrice; });
-  });
+  const inventorySpent = inventorySpentInRange(periodStart, periodEnd);
+  const totalProfit = totalRevenue - inventorySpent;
 
   document.getElementById('s_pitched').textContent = txns.length;
   document.getElementById('s_sold').textContent = boughtTxns.length;
@@ -917,6 +1294,34 @@ function renderStats(){
   document.getElementById('s_spent').textContent = fmtEuroShort(inventorySpent);
   document.getElementById('s_revenue').textContent = fmtEuroShort(totalRevenue);
   document.getElementById('s_profit').textContent = fmtEuroShort(totalProfit);
+
+  // ---- Headline number + delta vs previous period ----
+  const prevRange = getPrevPeriodRange(currentRange, periodStart, periodEnd);
+  const curHeadlineVal = headlineMetric==='revenue' ? totalRevenue : totalProfit;
+  document.getElementById('hlLabel').textContent = RANGE_HL_LABELS[currentRange][headlineMetric];
+  document.getElementById('hlNum').textContent = fmtEuroShort(curHeadlineVal);
+  const deltaEl = document.getElementById('hlDelta');
+  const subEl = document.getElementById('hlSub');
+  if(!prevRange){
+    deltaEl.className = 'hl-delta flat'; deltaEl.innerHTML='';
+    subEl.textContent = 'across all recorded activity';
+  } else {
+    const prevRevenue = revenueInRange(prevRange.start, prevRange.end);
+    const prevInvSpent = inventorySpentInRange(prevRange.start, prevRange.end);
+    const prevVal = headlineMetric==='revenue' ? prevRevenue : (prevRevenue-prevInvSpent);
+    subEl.textContent = 'vs ' + RANGE_PREV_LABELS[currentRange];
+    const arrowUp = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M18 6H9M18 6V15"/></svg>`;
+    const arrowDown = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6L18 18M18 18H9M18 18V9"/></svg>`;
+    if(prevVal<=0){
+      if(curHeadlineVal>0){ deltaEl.className='hl-delta up'; deltaEl.innerHTML = arrowUp+' New'; }
+      else { deltaEl.className='hl-delta flat'; deltaEl.innerHTML = '—'; }
+    } else {
+      const pct = Math.round(((curHeadlineVal-prevVal)/Math.abs(prevVal))*100);
+      if(pct>0){ deltaEl.className='hl-delta up'; deltaEl.innerHTML = arrowUp+' '+pct+'%'; }
+      else if(pct<0){ deltaEl.className='hl-delta down'; deltaEl.innerHTML = arrowDown+' '+Math.abs(pct)+'%'; }
+      else { deltaEl.className='hl-delta flat'; deltaEl.innerHTML = '0%'; }
+    }
+  }
 
   // Objections
   const objCounts = {};
