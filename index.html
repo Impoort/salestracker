@@ -737,6 +737,8 @@ function importDataFromFile(file){
 }
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function txnRevenue(t){ if(!t.bought) return 0; return t.soldFor + (t.upsellCardType ? t.upsellSoldFor : 0); }
+function txnCardCount(t){ if(!t.bought) return 0; return 1 + (t.upsellCardType ? 1 : 0); }
 function fmtEuro(n){ return '€' + (Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtEuroShort(n){ const r=Math.round(n); return '€'+r.toLocaleString(); }
 
@@ -1023,15 +1025,14 @@ function submitSale(){
     const txn = { id: uid(), ts: Date.now(), business: businessLabel, bought:false, reason: sale.reason.trim() };
     DATA.transactions.push(txn);
   } else {
-    const ts = Date.now();
-    const txn1 = { id: uid(), ts, business: businessLabel, bought:true, cardType: sale.cardType, soldFor: sale.soldFor };
-    DATA.transactions.push(txn1);
+    const txn = { id: uid(), ts: Date.now(), business: businessLabel, bought:true, cardType: sale.cardType, soldFor: sale.soldFor };
     if(DATA.inventory[sale.cardType].stock>0) DATA.inventory[sale.cardType].stock -= 1;
     if(sale.upsell && sale.upsellCardType){
-      const txn2 = { id: uid(), ts: ts+1, business: businessLabel, bought:true, cardType: sale.upsellCardType, soldFor: sale.upsellSoldFor, upsell:true };
-      DATA.transactions.push(txn2);
+      txn.upsellCardType = sale.upsellCardType;
+      txn.upsellSoldFor = sale.upsellSoldFor;
       if(DATA.inventory[sale.upsellCardType].stock>0) DATA.inventory[sale.upsellCardType].stock -= 1;
     }
+    DATA.transactions.push(txn);
   }
   saveData();
   closeSheet(sheetSale);
@@ -1098,7 +1099,7 @@ function renderTrack(){
   const todayStart = new Date(now.getFullYear(),now.getMonth(),now.getDate()).getTime();
   const todayTxns = DATA.transactions.filter(t=>t.ts>=todayStart);
   document.getElementById('todayPitches').textContent = todayTxns.length;
-  document.getElementById('todaySales').textContent = todayTxns.filter(t=>t.bought).length;
+  document.getElementById('todaySales').textContent = todayTxns.reduce((s,t)=>s+txnCardCount(t),0);
 
   const list = document.getElementById('recentList');
   const recent = [...DATA.transactions].sort((a,b)=>b.ts-a.ts).slice(0,12);
@@ -1110,10 +1111,15 @@ function renderTrack(){
   list.innerHTML = recent.map(t=>{
     const time = new Date(t.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
     if(t.bought){
+      const hasUpsell = !!t.upsellCardType;
+      const cardsLabel = hasUpsell
+        ? `${CARD_META[t.cardType].name} <span style="color:var(--blue); font-weight:700;">+ ${CARD_META[t.upsellCardType].name} (Upsell)</span>`
+        : CARD_META[t.cardType].name;
+      const totalAmt = t.soldFor + (hasUpsell ? t.upsellSoldFor : 0);
       return `<div class="txn">
         <div class="txn-icon yes">✓</div>
-        <div class="txn-main"><div class="t1">${t.business} · ${CARD_META[t.cardType].name}${t.upsell ? ' <span style="color:var(--blue); font-weight:700;">· Upsell</span>' : ''}</div><div class="t2">${time}</div></div>
-        <div class="txn-amt green">+${fmtEuro(t.soldFor)}</div>
+        <div class="txn-main"><div class="t1">${t.business} · ${cardsLabel}</div><div class="t2">${time}${hasUpsell ? ' · 2 cards sold' : ''}</div></div>
+        <div class="txn-amt green">+${fmtEuro(totalAmt)}</div>
         <button class="row-del" data-id="${t.id}" aria-label="Delete">${delIcon}</button>
       </div>`;
     } else {
@@ -1130,7 +1136,8 @@ function renderTrack(){
       const id = btn.dataset.id;
       const t = DATA.transactions.find(x=>x.id===id);
       if(!t) return;
-      const msg = t.bought ? `Delete this ${fmtEuro(t.soldFor)} sale to ${t.business}? Stock will be restored.` : `Delete this pitch to ${t.business}?`;
+      const totalAmt = t.bought ? (t.soldFor + (t.upsellCardType ? t.upsellSoldFor : 0)) : 0;
+      const msg = t.bought ? `Delete this ${fmtEuro(totalAmt)} sale to ${t.business}? Stock will be restored.` : `Delete this pitch to ${t.business}?`;
       openConfirm('Delete this entry?', msg, ()=> deleteSale(id));
     });
   });
@@ -1142,6 +1149,9 @@ function deleteSale(id){
   const t = DATA.transactions[idx];
   if(t.bought && t.cardType && DATA.inventory[t.cardType]){
     DATA.inventory[t.cardType].stock += 1;
+  }
+  if(t.bought && t.upsellCardType && DATA.inventory[t.upsellCardType]){
+    DATA.inventory[t.upsellCardType].stock += 1;
   }
   DATA.transactions.splice(idx,1);
   saveData();
@@ -1542,7 +1552,7 @@ function inventorySpentInRange(start, end){
   return spent;
 }
 function revenueInRange(start, end){
-  return DATA.transactions.filter(t=>t.bought && t.ts>=start && t.ts<end).reduce((s,t)=>s+t.soldFor,0);
+  return DATA.transactions.filter(t=>t.bought && t.ts>=start && t.ts<end).reduce((s,t)=>s+txnRevenue(t),0);
 }
 
 function hlLabelFor(range, offset, buckets, metric){
@@ -1588,12 +1598,13 @@ function renderStats(){
   const profData = revData.map((v,i)=> v - invSpentByBucket[i]);
   renderChart(buckets, revData, profData);
 
-  const totalRevenue = boughtTxns.reduce((s,t)=>s+t.soldFor,0);
+  const totalRevenue = boughtTxns.reduce((s,t)=>s+txnRevenue(t),0);
   const inventorySpent = inventorySpentInRange(periodStart, periodEnd);
   const totalProfit = totalRevenue - inventorySpent;
+  const cardsSold = boughtTxns.reduce((s,t)=>s+txnCardCount(t),0);
 
   document.getElementById('s_pitched').textContent = txns.length;
-  document.getElementById('s_sold').textContent = boughtTxns.length;
+  document.getElementById('s_sold').textContent = cardsSold;
   document.getElementById('s_rate').textContent = txns.length? Math.round(boughtTxns.length/txns.length*100)+'%' : '0%';
   document.getElementById('s_spent').textContent = fmtEuroShort(inventorySpent);
   document.getElementById('s_revenue').textContent = fmtEuroShort(totalRevenue);
