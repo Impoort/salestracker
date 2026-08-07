@@ -13,6 +13,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
   :root{
     --blue:#0A84FF;
@@ -426,6 +428,45 @@
   .confirm-title{font-size:18px; font-weight:800; text-align:center; margin-bottom:6px; letter-spacing:-0.01em;}
   .confirm-msg{font-size:14px; color:var(--text-2); text-align:center; line-height:1.5; margin-bottom:22px;}
 
+  /* ---------- Map page ---------- */
+  .map-toolbar{display:flex; gap:10px; margin-bottom:10px;}
+  .map-tool-btn{
+    width:44px; height:44px; border-radius:14px; border:1.5px solid var(--line); background:var(--bg);
+    color:var(--text-2); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:all .12s ease; flex-shrink:0;
+  }
+  .map-tool-btn svg{width:19px; height:19px;}
+  .map-tool-btn:active{transform:scale(0.94);}
+  .map-tool-btn.active{background:var(--blue); border-color:var(--blue); color:#fff;}
+  .map-mode-banner{
+    background:var(--blue-tint); color:var(--blue-dark); font-size:12.5px; font-weight:700;
+    padding:9px 13px; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .map-mode-banner button{background:none; border:none; color:var(--blue-dark); font-weight:800; font-size:12.5px; cursor:pointer; font-family:inherit;}
+  #leafletMap{
+    width:100%; height:340px; border-radius:var(--radius-l); overflow:hidden;
+    background:var(--bg-2); margin-bottom:10px;
+  }
+  .map-legend{display:flex; flex-wrap:wrap; gap:14px; margin-bottom:6px; padding:0 2px;}
+  .pin-btn{
+    width:100%; background:var(--blue-tint); color:var(--blue-dark); border:1.5px solid transparent;
+    border-radius:var(--radius-s); padding:12px; font-weight:700; font-size:13.5px; cursor:pointer; font-family:inherit;
+  }
+  .pin-btn:active{transform:scale(0.98);}
+
+  .reminder-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .reminder-row:last-child{border-bottom:none;}
+  .reminder-icon{width:36px;height:36px;border-radius:11px;background:var(--blue-tint); color:var(--blue); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:15px;}
+  .reminder-main{flex:1; min-width:0;}
+  .reminder-main .t1{font-weight:700; font-size:14px;}
+  .reminder-main .t2{font-size:12px; color:var(--text-2); margin-top:1px;}
+  .reminder-countdown{font-size:11.5px; font-weight:700; color:var(--blue); flex-shrink:0; text-align:right;}
+
+  .route-stop-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);}
+  .route-stop-row:last-child{border-bottom:none;}
+  .route-stop-num{width:22px;height:22px;border-radius:50%;background:var(--blue); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .route-stop-name{flex:1; font-size:13.5px; font-weight:600;}
+
   ::-webkit-scrollbar{display:none;}
 </style>
 </head>
@@ -532,7 +573,7 @@
       <div class="chart-headline">
         <div class="hl-label" id="hlLabel">Revenue</div>
         <div class="hl-row">
-          <div class="hl-num" id="hlNum">€0</div>
+          <div class="hl-num" id="hlNum">â¬0</div>
           <div class="hl-delta flat" id="hlDelta"></div>
         </div>
         <div class="hl-sub" id="hlSub">vs previous period</div>
@@ -543,16 +584,16 @@
         <div class="legend-item" id="legendPitches" data-metric="pitches"><span class="legend-dot dotted" style="color:var(--amber);"></span>Pitches</div>
       </div>
       <div id="chartHolder" style="position:relative;"></div>
-      <div class="swipe-hint" id="swipeHint">‹ swipe to change period ›</div>
+      <div class="swipe-hint" id="swipeHint">â¹ swipe to change period âº</div>
     </div>
 
     <div class="stat-grid">
       <div class="stat-box"><div class="label">Businesses Pitched</div><div class="value" id="s_pitched">0</div></div>
       <div class="stat-box"><div class="label">Cards Sold</div><div class="value" id="s_sold">0</div></div>
       <div class="stat-box"><div class="label">Success Rate</div><div class="value blue" id="s_rate">0%</div></div>
-      <div class="stat-box"><div class="label">Spent on Inventory</div><div class="value red" id="s_spent">€0</div></div>
-      <div class="stat-box"><div class="label">Total Revenue</div><div class="value" id="s_revenue">€0</div></div>
-      <div class="stat-box"><div class="label">Total Profit</div><div class="value green" id="s_profit">€0</div></div>
+      <div class="stat-box"><div class="label">Spent on Inventory</div><div class="value red" id="s_spent">â¬0</div></div>
+      <div class="stat-box"><div class="label">Total Revenue</div><div class="value" id="s_revenue">â¬0</div></div>
+      <div class="stat-box"><div class="label">Total Profit</div><div class="value green" id="s_profit">â¬0</div></div>
     </div>
 
     <div class="section-title">Objections</div>
@@ -568,6 +609,42 @@
     <div class="card" id="cityList" style="padding:4px 14px 6px;"></div>
   </div>
 
+  <!-- MAP PAGE -->
+  <div class="page" id="page-map">
+    <h2 class="page-title">Map</h2>
+
+    <div class="map-toolbar" id="mapToolbar">
+      <button class="map-tool-btn" id="btnLocateMe" title="Locate me">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2"/></svg>
+      </button>
+      <button class="map-tool-btn" id="btnPaintZones" title="Paint territory">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 3 3 0 0 0 3-3 2 2 0 0 1 2-2h1a4 4 0 0 0 4-4A10 10 0 0 0 12 2z"/><circle cx="7" cy="10" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="17" cy="10" r="1"/></svg>
+      </button>
+      <button class="map-tool-btn" id="btnAddReminder" title="Add visit reminder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </button>
+      <button class="map-tool-btn" id="btnPlanRoute" title="Plan a route">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5-2V4l5 2 6-2 5 2v14l-5-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
+      </button>
+    </div>
+    <div class="map-mode-banner" id="mapModeBanner" style="display:none;"></div>
+
+    <div id="leafletMap"></div>
+
+    <div class="map-legend">
+      <div class="legend-item" style="cursor:default;"><span class="legend-dot" style="background:var(--green);"></span>Sold</div>
+      <div class="legend-item" style="cursor:default;"><span class="legend-dot" style="background:#B4680A;"></span>Big Sale</div>
+      <div class="legend-item" style="cursor:default;"><span class="legend-dot" style="background:var(--red);"></span>No Sale</div>
+      <div class="legend-item" style="cursor:default;"><span class="legend-dot" style="background:var(--blue);"></span>Reminder</div>
+    </div>
+
+    <div class="section-title">Upcoming Visit Reminders</div>
+    <div class="card" id="reminderList" style="padding:4px 14px 6px;"></div>
+
+    <div class="section-title">Route Plan</div>
+    <div class="card" id="routePlanCard" style="padding:16px;"></div>
+  </div>
+
   <!-- TAB BAR -->
   <div class="tabbar">
     <button class="tab active" data-page="track">
@@ -581,6 +658,10 @@
     <button class="tab" data-page="stats">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>
       Statistics
+    </button>
+    <button class="tab" data-page="map">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5-2V4l5 2 6-2 5 2v14l-5-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
+      Map
     </button>
   </div>
 
@@ -630,8 +711,8 @@
   <div class="field-label">Quantity</div>
   <input type="number" id="stockQty" inputmode="numeric" placeholder="e.g. 100">
 
-  <div class="field-label">Total Price (€)</div>
-  <div class="euro-input"><span>€</span><input type="number" id="stockPrice" inputmode="decimal" placeholder="e.g. 45.00"></div>
+  <div class="field-label">Total Price (â¬)</div>
+  <div class="euro-input"><span>â¬</span><input type="number" id="stockPrice" inputmode="decimal" placeholder="e.g. 45.00"></div>
   <div class="hint" id="stockPerPiece">Price per card will be calculated automatically.</div>
 
   <div class="sheet-footer">
@@ -677,7 +758,7 @@
 
   <div class="card" style="padding:16px;">
     <div style="font-weight:700; font-size:14.5px; margin-bottom:4px;">Stored on this device</div>
-    <div class="hint" id="backupStats" style="margin-top:0;">—</div>
+    <div class="hint" id="backupStats" style="margin-top:0;">â</div>
   </div>
 
   <div class="field-label">Backup</div>
@@ -736,11 +817,33 @@
   <div class="sheet-footer" id="bigSaleFooter"></div>
 </div>
 
+<!-- VISIT REMINDER SHEET -->
+<div class="sheet" id="sheetReminder">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="title">Visit Reminder</div>
+    <button class="icon-btn" id="closeReminder">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+  <div class="field-label">What / Who</div>
+  <input type="text" id="reminderLabel" placeholder="e.g. CEO will be there" style="margin-bottom:10px;">
+  <div class="field-label">Date &amp; Time</div>
+  <div style="display:flex; gap:10px;">
+    <input type="date" id="reminderDate" style="flex:1.2;">
+    <input type="time" id="reminderTime" style="flex:1;">
+  </div>
+  <div class="hint">You'll get a reminder 1 day before and 30 minutes before â as long as this app is open in a browser tab at that time (see note below the reminder list).</div>
+  <div class="sheet-footer">
+    <button class="btn btn-primary" id="reminderSave" style="flex:1;">Save Reminder</button>
+  </div>
+</div>
+
 <script>
 (function(){
 
 // ============= DEFAULT DATA / STATE =============
-const DEFAULT_DATA = { transactions: [], inventory: { standup:{stock:0, purchases:[]}, regular:{stock:0, purchases:[]} }, settings: { currentLocation: '' } };
+const DEFAULT_DATA = { transactions: [], inventory: { standup:{stock:0, purchases:[]}, regular:{stock:0, purchases:[]} }, settings: { currentLocation: '' }, zones: {}, reminders: [] };
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 const STORAGE_KEY = 'sales-tracker-data-v1';
 
@@ -756,23 +859,25 @@ function normalizeData(){
   });
   if(!DATA.settings || typeof DATA.settings!=='object') DATA.settings = {currentLocation:''};
   if(typeof DATA.settings.currentLocation !== 'string') DATA.settings.currentLocation = '';
+  if(!DATA.zones || typeof DATA.zones!=='object' || Array.isArray(DATA.zones)) DATA.zones = {};
+  if(!Array.isArray(DATA.reminders)) DATA.reminders = [];
 }
 const BUSINESS_TYPES = [
-  {id:'Cafe', emoji:'☕'},
-  {id:'Restaurant', emoji:'🍽️'},
-  {id:'Barbershop', emoji:'💈'},
-  {id:'Kiosk', emoji:'🏪'},
-  {id:'Takeaway Shop', emoji:'🥡'},
-  {id:'Electronics Shop', emoji:'🔌'},
-  {id:'Book Shop', emoji:'📚'},
-  {id:'Furniture Store', emoji:'🛋️'},
-  {id:'Fabric Store', emoji:'🧵'},
-  {id:'Florist', emoji:'💐'},
-  {id:'Other', emoji:'✏️'}
+  {id:'Cafe', emoji:'â'},
+  {id:'Restaurant', emoji:'ð½ï¸'},
+  {id:'Barbershop', emoji:'ð'},
+  {id:'Kiosk', emoji:'ðª'},
+  {id:'Takeaway Shop', emoji:'ð¥¡'},
+  {id:'Electronics Shop', emoji:'ð'},
+  {id:'Book Shop', emoji:'ð'},
+  {id:'Furniture Store', emoji:'ðï¸'},
+  {id:'Fabric Store', emoji:'ð§µ'},
+  {id:'Florist', emoji:'ð'},
+  {id:'Other', emoji:'âï¸'}
 ];
 function emojiForBusiness(name){
   for(const b of BUSINESS_TYPES){ if(b.id!=='Other' && name.startsWith(b.id)) return b.emoji; }
-  return '✏️';
+  return 'âï¸';
 }
 const CARD_META = {
   standup:{name:'Stand Up Card', img:'data:image/webp;base64,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'},
@@ -807,7 +912,7 @@ async function saveData(){
 function updateSaveIndicator(ok){
   const el = document.getElementById('saveIndicator');
   if(!el) return;
-  el.textContent = ok ? 'Saved on this device' : 'Could not save — storage unavailable';
+  el.textContent = ok ? 'Saved on this device' : 'Could not save â storage unavailable';
   el.style.color = ok ? 'var(--text-2)' : 'var(--red)';
   clearTimeout(saveTimer);
   el.style.opacity = '1';
@@ -893,7 +998,7 @@ function costBasisAt(cardType, ts){
   let totQty=0, totPrice=0;
   inv.purchases.forEach(p=>{ if(p.ts<=ts){ totQty+=p.qty; totPrice+=p.totalPrice; } });
   if(totQty>0) return totPrice/totQty;
-  // no purchases existed yet at time of sale — fall back to the earliest known price so
+  // no purchases existed yet at time of sale â fall back to the earliest known price so
   // historical entries (or imported data) still get a sensible cost estimate.
   if(inv.purchases.length>0){
     let totQty2=0, totPrice2=0;
@@ -913,7 +1018,7 @@ function txnProfit(t){ return txnRevenue(t) - txnCost(t); }
 function fmtEuro(n){
   const val = Math.round((n + Number.EPSILON)*100)/100;
   const formatted = val.toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
-  return formatted + '€';
+  return formatted + 'â¬';
 }
 function fmtNum(n){ return Math.round(n).toLocaleString('de-DE'); }
 
@@ -926,8 +1031,8 @@ function pricePerPiece(type){
 }
 
 // ============= NAVIGATION =============
-const pages = {track:document.getElementById('page-track'), inventory:document.getElementById('page-inventory'), stats:document.getElementById('page-stats')};
-const tabSubs = {track:'Track your pitches', inventory:'Manage your cards', stats:'See your performance'};
+const pages = {track:document.getElementById('page-track'), inventory:document.getElementById('page-inventory'), stats:document.getElementById('page-stats'), map:document.getElementById('page-map')};
+const tabSubs = {track:'Track your pitches', inventory:'Manage your cards', stats:'See your performance', map:'Plan your territory'};
 document.querySelectorAll('.tab').forEach(tab=>{
   tab.addEventListener('click', ()=>{
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -939,6 +1044,7 @@ document.querySelectorAll('.tab').forEach(tab=>{
     if(key==='inventory') renderInventory();
     if(key==='stats') renderStats();
     if(key==='track') renderTrack();
+    if(key==='map'){ initMapIfNeeded(); renderReminders(); renderRoutePlanner(); }
   });
 });
 
@@ -952,7 +1058,8 @@ const sheetBackup = document.getElementById('sheetBackup');
 const sheetEdit = document.getElementById('sheetEdit');
 const sheetLocation = document.getElementById('sheetLocation');
 const sheetBigSale = document.getElementById('sheetBigSale');
-const ALL_SHEETS = [sheetSale, sheetStock, sheetHistory, sheetConfirm, sheetBackup, sheetEdit, sheetLocation, sheetBigSale];
+const sheetReminder = document.getElementById('sheetReminder');
+const ALL_SHEETS = [sheetSale, sheetStock, sheetHistory, sheetConfirm, sheetBackup, sheetEdit, sheetLocation, sheetBigSale, sheetReminder];
 function openSheet(sheet){ backdrop.classList.add('open'); sheet.classList.add('open'); document.body.style.overflow='hidden'; }
 function closeSheet(sheet){ backdrop.classList.remove('open'); sheet.classList.remove('open'); document.body.style.overflow=''; }
 function closeAllSheets(){ ALL_SHEETS.forEach(closeSheet); }
@@ -964,6 +1071,7 @@ document.getElementById('closeBackup').addEventListener('click', ()=>closeSheet(
 document.getElementById('closeEdit').addEventListener('click', ()=>closeSheet(sheetEdit));
 document.getElementById('closeLocation').addEventListener('click', ()=>closeSheet(sheetLocation));
 document.getElementById('closeBigSale').addEventListener('click', ()=>closeSheet(sheetBigSale));
+document.getElementById('closeReminder').addEventListener('click', ()=>closeSheet(sheetReminder));
 
 document.getElementById('btnBackup').addEventListener('click', ()=>{
   const txCount = DATA.transactions.length;
@@ -974,7 +1082,7 @@ document.getElementById('btnBackup').addEventListener('click', ()=>{
     const oldest = Math.min(...DATA.transactions.map(t=>t.ts));
     oldestStr = 'Tracking since ' + new Date(oldest).toLocaleDateString(undefined,{month:'long', day:'numeric', year:'numeric'});
   }
-  document.getElementById('backupStats').textContent = `${txCount} sale${txCount===1?'':'s'} tracked · ${standupPurch+regularPurch} stock entries · ${oldestStr}`;
+  document.getElementById('backupStats').textContent = `${txCount} sale${txCount===1?'':'s'} tracked Â· ${standupPurch+regularPurch} stock entries Â· ${oldestStr}`;
   openSheet(sheetBackup);
 });
 document.getElementById('btnExport').addEventListener('click', exportData);
@@ -1053,7 +1161,7 @@ function wireReasonSuggestions(inputEl, containerEl, onChange){
 
 // ============= ADD SALE WIZARD =============
 let sale = {};
-function resetSale(){ sale = {business:null, businessOther:'', bought:null, reason:'', cardType:null, soldFor:30, upsell:null, upsellCardType:null, upsellSoldFor:30}; }
+function resetSale(){ sale = {business:null, businessOther:'', bought:null, reason:'', cardType:null, soldFor:30, upsell:null, upsellCardType:null, upsellSoldFor:30, geo:null}; }
 
 function saleSteps(){
   // returns list of step ids relevant given current answers
@@ -1089,7 +1197,8 @@ function renderSaleStep(){
       </div>
       <div id="bizOtherWrap" style="display:${sale.business==='Other'?'block':'none'};margin-top:12px;">
         <input type="text" id="bizOtherInput" placeholder="Enter business type" value="${sale.businessOther||''}">
-      </div>`;
+      </div>
+      <button type="button" class="pin-btn" id="pinSaleLoc" style="margin-top:14px;">${sale.geo ? 'ð Location pinned â' : 'ð Pin this business location'}</button>`;
     content.querySelectorAll('.option-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         sale.business = btn.dataset.biz;
@@ -1102,6 +1211,9 @@ function renderSaleStep(){
     });
     const otherInput = document.getElementById('bizOtherInput');
     if(otherInput) otherInput.addEventListener('input', e=>{ sale.businessOther = e.target.value; updateSaleFooter(); });
+    document.getElementById('pinSaleLoc').addEventListener('click', (e)=>{
+      pinCurrentLocation((geo)=>{ sale.geo = geo; e.target.textContent = 'ð Location pinned â'; });
+    });
   }
 
   else if(step==='bought'){
@@ -1150,8 +1262,8 @@ function renderSaleStep(){
   else if(step==='soldFor'){
     content.innerHTML = `
       <div class="field-label">Sold For</div>
-      <div class="euro-input"><span>€</span><input type="number" id="soldInput" inputmode="decimal" value="${sale.soldFor}"></div>
-      <div class="hint">Default is €30 — adjust if you agreed on a different price.</div>`;
+      <div class="euro-input"><span>â¬</span><input type="number" id="soldInput" inputmode="decimal" value="${sale.soldFor}"></div>
+      <div class="hint">Default is â¬30 â adjust if you agreed on a different price.</div>`;
     document.getElementById('soldInput').addEventListener('input', e=>{ sale.soldFor = e.target.value===''?0:parseFloat(e.target.value); updateSaleFooter(); });
   }
 
@@ -1181,8 +1293,8 @@ function renderSaleStep(){
     const otherType = sale.upsellCardType;
     content.innerHTML = `
       <div class="field-label">Sold ${CARD_META[otherType].name} For</div>
-      <div class="euro-input"><span>€</span><input type="number" id="upsellSoldInput" inputmode="decimal" value="${sale.upsellSoldFor}"></div>
-      <div class="hint">Default is €30 — adjust if you agreed on a different price.</div>`;
+      <div class="euro-input"><span>â¬</span><input type="number" id="upsellSoldInput" inputmode="decimal" value="${sale.upsellSoldFor}"></div>
+      <div class="hint">Default is â¬30 â adjust if you agreed on a different price.</div>`;
     document.getElementById('upsellSoldInput').addEventListener('input', e=>{ sale.upsellSoldFor = e.target.value===''?0:parseFloat(e.target.value); updateSaleFooter(); });
   }
 
@@ -1223,10 +1335,10 @@ function submitSale(){
   const businessLabel = sale.business==='Other' ? ('Other: '+sale.businessOther.trim()) : sale.business;
   const loc = (DATA.settings && DATA.settings.currentLocation) || '';
   if(!sale.bought){
-    const txn = { id: uid(), ts: Date.now(), business: businessLabel, bought:false, reason: sale.reason.trim(), location: loc };
+    const txn = { id: uid(), ts: Date.now(), business: businessLabel, bought:false, reason: sale.reason.trim(), location: loc, geo: sale.geo||null };
     DATA.transactions.push(txn);
   } else {
-    const txn = { id: uid(), ts: Date.now(), business: businessLabel, bought:true, cardType: sale.cardType, soldFor: sale.soldFor, location: loc };
+    const txn = { id: uid(), ts: Date.now(), business: businessLabel, bought:true, cardType: sale.cardType, soldFor: sale.soldFor, location: loc, geo: sale.geo||null };
     if(DATA.inventory[sale.cardType].stock>0) DATA.inventory[sale.cardType].stock -= 1;
     if(sale.upsell && sale.upsellCardType){
       txn.upsellCardType = sale.upsellCardType;
@@ -1237,7 +1349,7 @@ function submitSale(){
   }
   saveData();
   closeSheet(sheetSale);
-  renderTrack(); renderInventory(); renderStats();
+  renderTrack(); renderInventory(); renderStats(); renderSalePins();
 }
 
 document.getElementById('btnAddSale').addEventListener('click', ()=>{
@@ -1266,7 +1378,7 @@ document.getElementById('locationSave').addEventListener('click', ()=>{
 // ============= BIG SALE WIZARD =============
 let bigSale = {};
 let bigSaleStepIndex = 0;
-function resetBigSale(){ bigSale = {business:null, businessOther:'', bizName:'', bizStreet:'', bizZip:'', bizCity:'', standupQty:0, regularQty:0, totalPrice:0}; }
+function resetBigSale(){ bigSale = {business:null, businessOther:'', bizName:'', bizStreet:'', bizZip:'', bizCity:'', standupQty:0, regularQty:0, totalPrice:0, geo:null}; }
 function bigSaleSteps(){ return ['business','bizDetails','cards']; }
 
 function renderBigSaleProgress(){
@@ -1314,11 +1426,15 @@ function renderBigSaleStep(){
       <div style="display:flex; gap:10px;">
         <input type="text" id="bsZip" placeholder="Zip Code" value="${escapeHtml(bigSale.bizZip||'')}" style="flex:0.9;">
         <input type="text" id="bsCity" placeholder="City" value="${escapeHtml(bigSale.bizCity||'')}" style="flex:1.4;">
-      </div>`;
+      </div>
+      <button type="button" class="pin-btn" id="pinBigSaleLoc" style="margin-top:14px;">${bigSale.geo ? 'ð Location pinned â' : 'ð Pin this business location'}</button>`;
     document.getElementById('bsName').addEventListener('input', e=>{ bigSale.bizName=e.target.value; updateBigSaleFooter(); });
     document.getElementById('bsStreet').addEventListener('input', e=>{ bigSale.bizStreet=e.target.value; });
     document.getElementById('bsZip').addEventListener('input', e=>{ bigSale.bizZip=e.target.value; });
     document.getElementById('bsCity').addEventListener('input', e=>{ bigSale.bizCity=e.target.value; updateBigSaleFooter(); });
+    document.getElementById('pinBigSaleLoc').addEventListener('click', (e)=>{
+      pinCurrentLocation((geo)=>{ bigSale.geo = geo; e.target.textContent = 'ð Location pinned â'; });
+    });
   }
 
   else if(step==='cards'){
@@ -1339,8 +1455,8 @@ function renderBigSaleStep(){
         </div>
       </div>
       <div class="field-label">Total Price</div>
-      <div class="euro-input"><span>€</span><input type="number" id="bsTotalPrice" inputmode="decimal" value="${bigSale.totalPrice||''}"></div>
-      <div class="hint">e.g. 10 Stand Up Cards + 5 Regular Cards for 200€</div>`;
+      <div class="euro-input"><span>â¬</span><input type="number" id="bsTotalPrice" inputmode="decimal" value="${bigSale.totalPrice||''}"></div>
+      <div class="hint">e.g. 10 Stand Up Cards + 5 Regular Cards for 200â¬</div>`;
     document.getElementById('bsQtyStandup').addEventListener('input', e=>{ bigSale.standupQty = e.target.value===''?0:parseInt(e.target.value); updateBigSaleFooter(); });
     document.getElementById('bsQtyRegular').addEventListener('input', e=>{ bigSale.regularQty = e.target.value===''?0:parseInt(e.target.value); updateBigSaleFooter(); });
     document.getElementById('bsTotalPrice').addEventListener('input', e=>{ bigSale.totalPrice = e.target.value===''?0:parseFloat(e.target.value); updateBigSaleFooter(); });
@@ -1382,7 +1498,7 @@ function submitBigSale(){
   if(bigSale.regularQty>0) items.push({cardType:'regular', qty:bigSale.regularQty});
   const txn = {
     id: uid(), ts: Date.now(), business: businessLabel, bought:true, isBigSale:true,
-    items, soldFor: bigSale.totalPrice, location: loc,
+    items, soldFor: bigSale.totalPrice, location: loc, geo: bigSale.geo||null,
     bizDetails: { name: bigSale.bizName.trim(), street:(bigSale.bizStreet||'').trim(), zip:(bigSale.bizZip||'').trim(), city: bigSale.bizCity.trim() }
   };
   items.forEach(it=>{
@@ -1391,7 +1507,7 @@ function submitBigSale(){
   DATA.transactions.push(txn);
   saveData();
   closeSheet(sheetBigSale);
-  renderTrack(); renderInventory(); renderStats();
+  renderTrack(); renderInventory(); renderStats(); renderSalePins();
 }
 
 document.getElementById('btnBigSale').addEventListener('click', ()=>{
@@ -1413,7 +1529,7 @@ function updateStockPerPiecePreview(){
   const price = parseFloat(document.getElementById('stockPrice').value);
   const hint = document.getElementById('stockPerPiece');
   if(qty>0 && price>=0){
-    hint.textContent = `≈ ${fmtEuro(price/qty)} per card`;
+    hint.textContent = `â ${fmtEuro(price/qty)} per card`;
   } else {
     hint.textContent = 'Price per card will be calculated automatically.';
   }
@@ -1462,7 +1578,7 @@ function renderTrack(){
   const list = document.getElementById('recentList');
   const sorted = [...DATA.transactions].sort((a,b)=>b.ts-a.ts);
   if(sorted.length===0){
-    list.innerHTML = `<div class="empty"><div class="emoji">📋</div><div class="t1">No activity yet</div><div class="t2">Tap "+ Add Sale" to log your first pitch.</div></div>`;
+    list.innerHTML = `<div class="empty"><div class="emoji">ð</div><div class="t1">No activity yet</div><div class="t2">Tap "+ Add Sale" to log your first pitch.</div></div>`;
     if(trackObserver) trackObserver.disconnect();
     return;
   }
@@ -1471,12 +1587,12 @@ function renderTrack(){
   const editIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`;
   let rowsHtml = visible.map(t=>{
     const time = new Date(t.ts).toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    const locTag = t.location ? ` · 📍 ${escapeHtml(t.location)}` : '';
+    const locTag = t.location ? ` Â· ð ${escapeHtml(t.location)}` : '';
     if(t.isBigSale){
       const parts = (t.items||[]).map(it=>`${it.qty} ${CARD_META[it.cardType].name}`).join(' + ');
       return `<div class="txn">
-        <div class="txn-icon big">★</div>
-        <div class="txn-main"><div class="t1">${escapeHtml(t.business)} <span style="color:#B4680A; font-weight:700;">· Big Sale</span></div><div class="t2">${parts}${locTag} · ${time}</div></div>
+        <div class="txn-icon big">â</div>
+        <div class="txn-main"><div class="t1">${escapeHtml(t.business)} <span style="color:#B4680A; font-weight:700;">Â· Big Sale</span></div><div class="t2">${parts}${locTag} Â· ${time}</div></div>
         <div class="txn-amt green">+${fmtEuro(t.soldFor)}</div>
         <div class="row-actions">
           <button class="row-edit" data-id="${t.id}" aria-label="Edit">${editIcon}</button>
@@ -1490,8 +1606,8 @@ function renderTrack(){
         : CARD_META[t.cardType].name;
       const totalAmt = t.soldFor + (hasUpsell ? t.upsellSoldFor : 0);
       return `<div class="txn">
-        <div class="txn-icon yes">✓</div>
-        <div class="txn-main"><div class="t1">${escapeHtml(t.business)} · ${cardsLabel}</div><div class="t2">${time}${hasUpsell ? ' · 2 cards sold' : ''}${locTag}</div></div>
+        <div class="txn-icon yes">â</div>
+        <div class="txn-main"><div class="t1">${escapeHtml(t.business)} Â· ${cardsLabel}</div><div class="t2">${time}${hasUpsell ? ' Â· 2 cards sold' : ''}${locTag}</div></div>
         <div class="txn-amt green">+${fmtEuro(totalAmt)}</div>
         <div class="row-actions">
           <button class="row-edit" data-id="${t.id}" aria-label="Edit">${editIcon}</button>
@@ -1500,8 +1616,8 @@ function renderTrack(){
       </div>`;
     } else {
       return `<div class="txn">
-        <div class="txn-icon no">✕</div>
-        <div class="txn-main"><div class="t1">${escapeHtml(t.business)}</div><div class="t2">${escapeHtml(t.reason)} · ${time}${locTag}</div></div>
+        <div class="txn-icon no">â</div>
+        <div class="txn-main"><div class="t1">${escapeHtml(t.business)}</div><div class="t2">${escapeHtml(t.reason)} Â· ${time}${locTag}</div></div>
         <div class="txn-amt grey">No sale</div>
         <div class="row-actions">
           <button class="row-edit" data-id="${t.id}" aria-label="Edit">${editIcon}</button>
@@ -1511,9 +1627,9 @@ function renderTrack(){
     }
   }).join('');
   if(trackVisibleCount < sorted.length){
-    rowsHtml += `<div class="track-loader" id="trackSentinel">Loading more…</div>`;
+    rowsHtml += `<div class="track-loader" id="trackSentinel">Loading moreâ¦</div>`;
   } else if(sorted.length>20){
-    rowsHtml += `<div class="track-loader" style="opacity:0.5;">— that's everything —</div>`;
+    rowsHtml += `<div class="track-loader" style="opacity:0.5;">â that's everything â</div>`;
   }
   list.innerHTML = rowsHtml;
 
@@ -1585,7 +1701,8 @@ function openEditSheet(id){
     business, businessOther,
     reason: t.reason||'',
     location: t.location||'',
-    bizName: bd.name||'', bizStreet: bd.street||'', bizZip: bd.zip||'', bizCity: bd.city||''
+    bizName: bd.name||'', bizStreet: bd.street||'', bizZip: bd.zip||'', bizCity: bd.city||'',
+    geo: t.geo||null
   };
   renderEditContent(t);
   openSheet(sheetEdit);
@@ -1620,7 +1737,8 @@ function renderEditContent(t){
   html += `
     <div class="field-label">Location</div>
     <input type="text" id="editLocationInput" placeholder="e.g. Berlin, Germany" value="${escapeHtml(editState.location)}">
-    <div class="hint">Where this pitch/sale took place. Used for the by-city breakdown in Statistics.</div>`;
+    <div class="hint">Where this pitch/sale took place. Used for the by-city breakdown in Statistics.</div>
+    <button type="button" class="pin-btn" id="editPinLoc" style="margin-top:14px;">${editState.geo ? 'ð Map pin set â (tap to update)' : 'ð Pin this on the map'}</button>`;
   content.innerHTML = html;
 
   content.querySelectorAll('#editBizGrid .option-btn').forEach(btn=>{
@@ -1647,6 +1765,9 @@ function renderEditContent(t){
     document.getElementById('editBizCity').addEventListener('input', e=>{ editState.bizCity = e.target.value; });
   }
   document.getElementById('editLocationInput').addEventListener('input', e=>{ editState.location = e.target.value; });
+  document.getElementById('editPinLoc').addEventListener('click', (e)=>{
+    pinCurrentLocation((geo)=>{ editState.geo = geo; e.target.textContent = 'ð Map pin set â (tap to update)'; });
+  });
 }
 
 document.getElementById('editSave').addEventListener('click', ()=>{
@@ -1667,9 +1788,10 @@ document.getElementById('editSave').addEventListener('click', ()=>{
     t.bizDetails = { name: editState.bizName.trim(), street: editState.bizStreet.trim(), zip: editState.bizZip.trim(), city: editState.bizCity.trim() };
   }
   t.location = editState.location.trim();
+  t.geo = editState.geo || null;
   saveData();
   closeSheet(sheetEdit);
-  renderTrack(); renderStats();
+  renderTrack(); renderStats(); renderSalePins();
 });
 
 // ============= RENDER: INVENTORY =============
@@ -1687,11 +1809,11 @@ function renderInventory(){
       <div class="inv-info">
         <div class="name">${CARD_META[type].name}</div>
         <div class="meta">
-          <span>Price/card: <b>${ppp>0?fmtEuro(ppp):'—'}</b></span>
+          <span>Price/card: <b>${ppp>0?fmtEuro(ppp):'â'}</b></span>
         </div>
       </div>
       <div class="stock-pill ${stockClass}">${stockLabel}</div>
-      ${histCount>0 ? `<button class="btn-ghost inv-hist-btn" data-type="${type}" style="width:100%; text-align:left; padding:6px 0 0; font-size:12.5px; font-weight:700;">View history (${histCount}) ›</button>` : ''}
+      ${histCount>0 ? `<button class="btn-ghost inv-hist-btn" data-type="${type}" style="width:100%; text-align:left; padding:6px 0 0; font-size:12.5px; font-weight:700;">View history (${histCount}) âº</button>` : ''}
     </div>`;
   }).join('');
   list.querySelectorAll('.inv-hist-btn').forEach(btn=>{
@@ -1710,7 +1832,7 @@ function renderHistoryList(type){
   const inv = DATA.inventory[type];
   const purchases = [...inv.purchases].sort((a,b)=>b.ts-a.ts);
   if(purchases.length===0){
-    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">📦</div><div class="t1">No stock added yet</div></div>`;
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">ð¦</div><div class="t1">No stock added yet</div></div>`;
     return;
   }
   const delIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>`;
@@ -1720,8 +1842,8 @@ function renderHistoryList(type){
     return `<div class="hist-row">
       <img src="${CARD_META[type].img}">
       <div class="hist-info">
-        <div class="t1">${p.qty} cards · ${fmtEuro(p.totalPrice)}</div>
-        <div class="t2">${time} · ${fmtEuro(ppp)}/card</div>
+        <div class="t1">${p.qty} cards Â· ${fmtEuro(p.totalPrice)}</div>
+        <div class="t2">${time} Â· ${fmtEuro(ppp)}/card</div>
       </div>
       <button class="row-del" data-id="${p.id}" aria-label="Delete">${delIcon}</button>
     </div>`;
@@ -1869,7 +1991,7 @@ function periodLabelFor(range, offset, buckets){
   if(range==='daily'){
     const d = new Date(buckets[0].start);
     const isToday = offset===0;
-    return (isToday?'Today · ':'') + d.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+    return (isToday?'Today Â· ':'') + d.toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric', year:'numeric'});
   }
   if(range==='weekly'){
     const s = new Date(buckets[0].start);
@@ -1877,20 +1999,20 @@ function periodLabelFor(range, offset, buckets){
     const sameMonth = s.getMonth()===e.getMonth();
     const startStr = s.toLocaleDateString(undefined, sameMonth?{month:'short', day:'numeric'}:{month:'short', day:'numeric'});
     const endStr = e.toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'});
-    return (offset===0?'This Week · ':'') + startStr + ' – ' + endStr;
+    return (offset===0?'This Week Â· ':'') + startStr + ' â ' + endStr;
   }
   if(range==='monthly'){
     const d = new Date(buckets[0].start);
-    return (offset===0?'This Month · ':'') + d.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+    return (offset===0?'This Month Â· ':'') + d.toLocaleDateString(undefined,{month:'long', year:'numeric'});
   }
   if(range==='yearly'){
     const d = new Date(buckets[0].start);
-    return (offset===0?'This Year · ':'') + d.getFullYear();
+    return (offset===0?'This Year Â· ':'') + d.getFullYear();
   }
   // alltime
   const s = new Date(buckets[0].start);
   const e = new Date(buckets[buckets.length-1].end - 1);
-  return s.toLocaleDateString(undefined,{month:'short', year:'numeric'}) + ' – ' + e.toLocaleDateString(undefined,{month:'short', year:'numeric'});
+  return s.toLocaleDateString(undefined,{month:'short', year:'numeric'}) + ' â ' + e.toLocaleDateString(undefined,{month:'short', year:'numeric'});
 }
 
 // previous-period range, aligned to same length, ending right before periodStart
@@ -2152,7 +2274,7 @@ function renderStats(){
     const arrowDown = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6L18 18M18 18H9M18 18V9"/></svg>`;
     if(prevVal<=0){
       if(curHeadlineVal>0){ deltaEl.className='hl-delta up'; deltaEl.innerHTML = arrowUp+' New'; }
-      else { deltaEl.className='hl-delta flat'; deltaEl.innerHTML = '—'; }
+      else { deltaEl.className='hl-delta flat'; deltaEl.innerHTML = 'â'; }
     } else {
       const pct = Math.round(((curHeadlineVal-prevVal)/Math.abs(prevVal))*100);
       if(pct>0){ deltaEl.className='hl-delta up'; deltaEl.innerHTML = arrowUp+' '+pct+'%'; }
@@ -2224,7 +2346,7 @@ function renderExpandableList(el, items, rowHtmlFn){
 function renderObjections(objArr){
   const el = document.getElementById('objList');
   if(objArr.length===0){
-    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">🎯</div><div class="t1">No objections logged</div><div class="t2">Reasons customers give will show up here.</div></div>`;
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">ð¯</div><div class="t1">No objections logged</div><div class="t2">Reasons customers give will show up here.</div></div>`;
     return;
   }
   const maxCount = objArr[0].count;
@@ -2241,7 +2363,7 @@ function renderObjections(objArr){
 function renderBizRates(bizArr){
   const el = document.getElementById('bizList');
   if(bizArr.length===0){
-    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">🏢</div><div class="t1">No data yet</div><div class="t2">Pitch a business to see success rates here.</div></div>`;
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">ð¢</div><div class="t1">No data yet</div><div class="t2">Pitch a business to see success rates here.</div></div>`;
     return;
   }
   renderExpandableList(el, bizArr, (b)=>`<div class="biz-row">
@@ -2255,7 +2377,7 @@ function renderBizRates(bizArr){
 function renderBizPitched(bizArr){
   const el = document.getElementById('bizPitchedList');
   if(bizArr.length===0){
-    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">📍</div><div class="t1">No pitches yet</div><div class="t2">Businesses you pitch will be ranked here.</div></div>`;
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">ð</div><div class="t1">No pitches yet</div><div class="t2">Businesses you pitch will be ranked here.</div></div>`;
     return;
   }
   const maxCount = bizArr[0].total;
@@ -2270,11 +2392,11 @@ function renderBizPitched(bizArr){
 function renderCityStats(cityArr){
   const el = document.getElementById('cityList');
   if(cityArr.length===0){
-    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">🗺️</div><div class="t1">No locations yet</div><div class="t2">Set your location on Track to start breaking down performance by city.</div></div>`;
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">ðºï¸</div><div class="t1">No locations yet</div><div class="t2">Set your location on Track to start breaking down performance by city.</div></div>`;
     return;
   }
   renderExpandableList(el, cityArr, (c)=>`<div class="city-row">
-    <div class="city-name">📍 ${escapeHtml(c.name)}</div>
+    <div class="city-name">ð ${escapeHtml(c.name)}</div>
     <div class="city-stats">
       <div class="city-stat"><span class="city-stat-val">${c.pitches}</span><span class="city-stat-lbl">Pitches</span></div>
       <div class="city-stat"><span class="city-stat-val">${c.sales}</span><span class="city-stat-lbl">Sales</span></div>
@@ -2287,6 +2409,356 @@ function escapeHtml(s){
   const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
 }
 
+// ============= MAP =============
+const FRANKFURT = [50.1109, 8.6821];
+const ZONE_CELL_DEG = 0.004; // roughly a 300-400m grid cell
+
+let leafletMap = null;
+let mapInitialized = false;
+let currentLocMarker = null;
+let saleMarkersLayer = null;
+let reminderMarkersLayer = null;
+let zoneLayer = null;
+let routeLine = null;
+let mapMode = null; // null | 'paintZones' | 'addReminder' | 'planRoute'
+let pendingReminderLatLng = null;
+
+function pinCurrentLocation(callback){
+  if(!navigator.geolocation){ alert('Geolocation is not available on this device/browser.'); return; }
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    callback({lat: pos.coords.latitude, lng: pos.coords.longitude});
+  }, ()=>{
+    alert('Could not get your location. Make sure location access is allowed for this site in your device settings.');
+  }, {enableHighAccuracy:true, timeout:10000});
+}
+
+function initMapIfNeeded(){
+  if(mapInitialized) return;
+  mapInitialized = true;
+  leafletMap = L.map('leafletMap', {zoomControl:true}).setView(FRANKFURT, 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(leafletMap);
+
+  zoneLayer = L.layerGroup().addTo(leafletMap);
+  saleMarkersLayer = L.layerGroup().addTo(leafletMap);
+  reminderMarkersLayer = L.layerGroup().addTo(leafletMap);
+
+  leafletMap.on('click', onMapClick);
+
+  renderZones();
+  renderSalePins();
+  renderReminderPins();
+
+  setTimeout(()=>{ if(leafletMap) leafletMap.invalidateSize(); }, 150);
+}
+
+function onMapClick(e){
+  if(mapMode==='paintZones'){
+    toggleZoneCell(e.latlng.lat, e.latlng.lng);
+  } else if(mapMode==='addReminder'){
+    pendingReminderLatLng = {lat:e.latlng.lat, lng:e.latlng.lng};
+    document.getElementById('reminderLabel').value='';
+    const now = new Date();
+    document.getElementById('reminderDate').value = now.toISOString().slice(0,10);
+    document.getElementById('reminderTime').value = '12:00';
+    openSheet(sheetReminder);
+    setMapMode(null);
+  }
+}
+
+function setMapMode(mode){
+  mapMode = (mapMode===mode) ? null : mode;
+  document.querySelectorAll('.map-tool-btn').forEach(b=>b.classList.remove('active'));
+  const banner = document.getElementById('mapModeBanner');
+  if(mapMode==='paintZones'){
+    document.getElementById('btnPaintZones').classList.add('active');
+    banner.style.display='flex';
+    banner.innerHTML = `<span>Tap the map to cycle a spot: open â worked off â clear</span><button id="exitMapMode">Done</button>`;
+  } else if(mapMode==='addReminder'){
+    document.getElementById('btnAddReminder').classList.add('active');
+    banner.style.display='flex';
+    banner.innerHTML = `<span>Tap the map where you want to set a reminder</span><button id="exitMapMode">Cancel</button>`;
+  } else if(mapMode==='planRoute'){
+    document.getElementById('btnPlanRoute').classList.add('active');
+    banner.style.display='flex';
+    banner.innerHTML = `<span>Scroll down â the route planner is below the map</span><button id="exitMapMode">Done</button>`;
+    document.getElementById('routePlanCard').scrollIntoView({behavior:'smooth', block:'nearest'});
+  } else {
+    banner.style.display='none';
+  }
+  const exitBtn = document.getElementById('exitMapMode');
+  if(exitBtn) exitBtn.addEventListener('click', ()=> setMapMode(null));
+}
+document.getElementById('btnLocateMe').addEventListener('click', ()=>{
+  initMapIfNeeded();
+  if(!navigator.geolocation){ alert('Geolocation is not available on this device/browser.'); return; }
+  navigator.geolocation.getCurrentPosition((pos)=>{
+    const {latitude, longitude} = pos.coords;
+    if(currentLocMarker) leafletMap.removeLayer(currentLocMarker);
+    currentLocMarker = L.circleMarker([latitude, longitude], {radius:9, color:'#fff', weight:3, fillColor:'#0A84FF', fillOpacity:1}).addTo(leafletMap);
+    leafletMap.setView([latitude, longitude], 15);
+  }, ()=>{
+    alert('Could not get your location. Make sure location access is allowed for this site.');
+  }, {enableHighAccuracy:true, timeout:10000});
+});
+document.getElementById('btnPaintZones').addEventListener('click', ()=>{ initMapIfNeeded(); setMapMode('paintZones'); });
+document.getElementById('btnAddReminder').addEventListener('click', ()=>{ initMapIfNeeded(); setMapMode('addReminder'); });
+document.getElementById('btnPlanRoute').addEventListener('click', ()=>{ initMapIfNeeded(); setMapMode('planRoute'); });
+
+// ---- Territory painting ----
+function zoneCellId(lat, lng){
+  return Math.floor(lat/ZONE_CELL_DEG) + '_' + Math.floor(lng/ZONE_CELL_DEG);
+}
+function zoneCellBounds(id){
+  const parts = id.split('_').map(Number);
+  const south = parts[0]*ZONE_CELL_DEG, north = south+ZONE_CELL_DEG;
+  const west = parts[1]*ZONE_CELL_DEG, east = west+ZONE_CELL_DEG;
+  return [[south,west],[north,east]];
+}
+function toggleZoneCell(lat,lng){
+  const id = zoneCellId(lat,lng);
+  const cur = DATA.zones[id];
+  let next;
+  if(!cur) next='open';
+  else if(cur==='open') next='worked';
+  else next=null;
+  if(next) DATA.zones[id]=next; else delete DATA.zones[id];
+  saveData();
+  renderZones();
+}
+function renderZones(){
+  if(!zoneLayer) return;
+  zoneLayer.clearLayers();
+  Object.keys(DATA.zones).forEach(id=>{
+    const status = DATA.zones[id];
+    const color = status==='worked' ? '#30B25C' : '#0A84FF';
+    L.rectangle(zoneCellBounds(id), {color, weight:1, fillColor:color, fillOpacity:0.28}).addTo(zoneLayer);
+  });
+}
+
+// ---- Sale pins ----
+window.__editTxnFromMap = function(id){
+  if(leafletMap) leafletMap.closePopup();
+  openEditSheet(id);
+};
+function renderSalePins(){
+  if(!saleMarkersLayer) return;
+  saleMarkersLayer.clearLayers();
+  DATA.transactions.forEach(t=>{
+    if(!t.geo || typeof t.geo.lat!=='number') return;
+    const fill = t.isBigSale ? '#B4680A' : (t.bought ? '#30B25C' : '#FF3B30');
+    const label = t.isBigSale ? 'Big Sale' : (t.bought ? 'Sale' : 'No Sale');
+    const marker = L.circleMarker([t.geo.lat, t.geo.lng], {radius:8, color:'#fff', weight:2, fillColor:fill, fillOpacity:1}).addTo(saleMarkersLayer);
+    const amtStr = t.bought ? ' Â· ' + fmtEuro(txnRevenue(t)) : '';
+    const dateStr = new Date(t.ts).toLocaleDateString();
+    marker.bindPopup(`<b>${escapeHtml(t.business)}</b><br>${label}${amtStr}<br>${dateStr}<br><button onclick="window.__editTxnFromMap('${t.id}')" style="margin-top:6px;padding:5px 10px;border:none;border-radius:8px;background:#0A84FF;color:#fff;font-weight:700;font-size:12px;cursor:pointer;">Edit</button>`);
+  });
+}
+
+// ---- Reminder pins ----
+window.__deleteReminderFromMap = function(id){
+  if(leafletMap) leafletMap.closePopup();
+  const r = DATA.reminders.find(x=>x.id===id);
+  if(!r) return;
+  openConfirm('Delete this reminder?', `Remove "${r.label}"?`, ()=>{
+    DATA.reminders = DATA.reminders.filter(x=>x.id!==id);
+    saveData();
+    renderReminderPins(); renderReminders(); renderRoutePlanner();
+  });
+};
+function renderReminderPins(){
+  if(!reminderMarkersLayer) return;
+  reminderMarkersLayer.clearLayers();
+  DATA.reminders.forEach(r=>{
+    const icon = L.divIcon({
+      className:'', iconSize:[26,26], iconAnchor:[13,13],
+      html:'<div style="width:26px;height:26px;border-radius:50%;background:#0A84FF;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-size:13px;">â°</div>'
+    });
+    const marker = L.marker([r.lat, r.lng], {icon}).addTo(reminderMarkersLayer);
+    const when = new Date(r.ts).toLocaleString(undefined,{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    marker.bindPopup(`<b>${escapeHtml(r.label)}</b><br>${when}<br><button onclick="window.__deleteReminderFromMap('${r.id}')" style="margin-top:6px;padding:5px 10px;border:none;border-radius:8px;background:#FF3B30;color:#fff;font-weight:700;font-size:12px;cursor:pointer;">Delete</button>`);
+  });
+}
+
+document.getElementById('reminderSave').addEventListener('click', ()=>{
+  const label = document.getElementById('reminderLabel').value.trim();
+  const dateVal = document.getElementById('reminderDate').value;
+  const timeVal = document.getElementById('reminderTime').value;
+  if(!label){ alert('Please enter what/who this reminder is for.'); return; }
+  if(!dateVal || !timeVal){ alert('Please set a date and time.'); return; }
+  if(!pendingReminderLatLng){ alert('Something went wrong placing the pin â please tap the map again.'); return; }
+  const ts = new Date(`${dateVal}T${timeVal}`).getTime();
+  DATA.reminders.push({ id: uid(), label, ts, lat: pendingReminderLatLng.lat, lng: pendingReminderLatLng.lng, notified1d:false, notified30m:false });
+  pendingReminderLatLng = null;
+  saveData();
+  closeSheet(sheetReminder);
+  renderReminderPins(); renderReminders(); renderRoutePlanner();
+  requestNotificationPermission();
+});
+
+function renderReminders(){
+  const el = document.getElementById('reminderList');
+  const now = Date.now();
+  const upcoming = [...DATA.reminders].filter(r=>r.ts >= now - 60*60*1000).sort((a,b)=>a.ts-b.ts);
+  if(upcoming.length===0){
+    el.innerHTML = `<div class="empty" style="padding:26px 10px;"><div class="emoji">â°</div><div class="t1">No reminders set</div><div class="t2">Tap the clock icon above the map, then tap a spot to set a visit reminder.</div></div>`;
+    return;
+  }
+  const delIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>`;
+  el.innerHTML = upcoming.map(r=>{
+    const d = new Date(r.ts);
+    const when = d.toLocaleString(undefined,{weekday:'short', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    const diffMs = r.ts - now;
+    let countdown;
+    if(diffMs<0) countdown='Now';
+    else{
+      const days = Math.floor(diffMs/86400000), hours = Math.floor((diffMs%86400000)/3600000), mins = Math.floor((diffMs%3600000)/60000);
+      countdown = days>0 ? `in ${days}d ${hours}h` : (hours>0 ? `in ${hours}h ${mins}m` : `in ${mins}m`);
+    }
+    return `<div class="reminder-row">
+      <div class="reminder-icon">â°</div>
+      <div class="reminder-main"><div class="t1">${escapeHtml(r.label)}</div><div class="t2">${when}</div></div>
+      <div class="reminder-countdown">${countdown}</div>
+      <button class="row-del" data-id="${r.id}" aria-label="Delete" style="margin-left:4px;">${delIcon}</button>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.row-del').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const r = DATA.reminders.find(x=>x.id===btn.dataset.id);
+      if(!r) return;
+      openConfirm('Delete this reminder?', `Remove "${r.label}"?`, ()=>{
+        DATA.reminders = DATA.reminders.filter(x=>x.id!==r.id);
+        saveData();
+        renderReminderPins(); renderReminders(); renderRoutePlanner();
+      });
+    });
+  });
+}
+
+// ---- Local notifications (best-effort; only fires while this app is open in a tab) ----
+function requestNotificationPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission==='default') Notification.requestPermission();
+}
+function fireNotification(title, body){
+  if('Notification' in window && Notification.permission==='granted'){
+    try{ new Notification(title, {body}); }catch(e){}
+  }
+  showInAppBanner(title, body);
+}
+function showInAppBanner(title, body){
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:200; background:#1C1C1E; color:#fff; padding:12px 16px; border-radius:14px; font-size:13px; font-weight:600; max-width:88%; box-shadow:0 8px 24px rgba(0,0,0,0.3); text-align:center;';
+  banner.innerHTML = `<div>${escapeHtml(title)}</div><div style="opacity:0.7; font-weight:500; margin-top:2px;">${escapeHtml(body)}</div>`;
+  document.body.appendChild(banner);
+  setTimeout(()=>{ banner.style.transition='opacity .3s'; banner.style.opacity='0'; setTimeout(()=>banner.remove(),300); }, 5500);
+}
+function checkReminders(){
+  if(!DATA.reminders || DATA.reminders.length===0) return;
+  const now = Date.now();
+  let changed = false;
+  DATA.reminders.forEach(r=>{
+    const oneDayBefore = r.ts - 24*60*60*1000;
+    const thirtyMinBefore = r.ts - 30*60*1000;
+    if(!r.notified1d && now>=oneDayBefore && now<r.ts){
+      fireNotification(`Reminder tomorrow: ${r.label}`, new Date(r.ts).toLocaleString());
+      r.notified1d = true; changed=true;
+    }
+    if(!r.notified30m && now>=thirtyMinBefore && now<r.ts){
+      fireNotification(`Coming up in 30 min: ${r.label}`, new Date(r.ts).toLocaleString());
+      r.notified30m = true; changed=true;
+    }
+  });
+  if(changed){ saveData(); renderReminders(); }
+}
+setInterval(checkReminders, 30000);
+
+// ---- Route planner ----
+function haversineKm(lat1,lng1,lat2,lng2){
+  const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+let routeDate = todayStr();
+let routeOrder = null;
+
+function remindersOnDate(dateStr){
+  return [...DATA.reminders].filter(r=>{
+    const d = new Date(r.ts);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    return ds===dateStr;
+  }).sort((a,b)=>a.ts-b.ts);
+}
+
+function renderRoutePlanner(){
+  const card = document.getElementById('routePlanCard');
+  const stops = remindersOnDate(routeDate);
+  let html = `<div class="field-label" style="margin-top:0;">Date</div><input type="date" id="routeDateInput" value="${routeDate}" style="margin-bottom:12px;">`;
+  if(stops.length===0){
+    html += `<div class="empty" style="padding:20px 6px;"><div class="emoji">ðºï¸</div><div class="t1">No reminders on this date</div><div class="t2">Set visit reminders on the map for this day to plan a route.</div></div>`;
+    card.innerHTML = html;
+    document.getElementById('routeDateInput').addEventListener('change', e=>{ routeDate=e.target.value; routeOrder=null; renderRoutePlanner(); });
+    if(routeLine && leafletMap){ leafletMap.removeLayer(routeLine); routeLine=null; }
+    return;
+  }
+  const order = routeOrder || stops.map(s=>s.id);
+  const orderedStops = order.map(id=>stops.find(s=>s.id===id)).filter(Boolean);
+  let totalKm = 0;
+  for(let i=0;i<orderedStops.length-1;i++) totalKm += haversineKm(orderedStops[i].lat, orderedStops[i].lng, orderedStops[i+1].lat, orderedStops[i+1].lng);
+  html += `<div class="hint" style="margin:0 0 10px;">${orderedStops.length} stop${orderedStops.length===1?'':'s'} Â· ~${totalKm.toFixed(1)} km straight-line (real driving distance will differ)</div>`;
+  html += orderedStops.map((s,i)=>`<div class="route-stop-row"><div class="route-stop-num">${i+1}</div><div class="route-stop-name">${escapeHtml(s.label)}</div><div class="hint" style="margin:0;">${new Date(s.ts).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'})}</div></div>`).join('');
+  html += `<div style="display:flex; gap:10px; margin-top:14px;">
+    <button class="btn btn-secondary" id="btnOptimizeRoute" style="flex:1;">Optimize Order</button>
+    <button class="btn btn-primary" id="btnOpenGoogleMaps" style="flex:1;">Open in Maps</button>
+  </div>`;
+  card.innerHTML = html;
+
+  document.getElementById('routeDateInput').addEventListener('change', e=>{ routeDate=e.target.value; routeOrder=null; renderRoutePlanner(); });
+  document.getElementById('btnOptimizeRoute').addEventListener('click', ()=> optimizeRouteOrder(orderedStops));
+  document.getElementById('btnOpenGoogleMaps').addEventListener('click', ()=> openRouteInGoogleMaps(orderedStops));
+
+  drawRouteLine(orderedStops);
+}
+
+function optimizeRouteOrder(stops){
+  const start = currentLocMarker ? currentLocMarker.getLatLng() : {lat:stops[0].lat, lng:stops[0].lng};
+  let remaining = [...stops];
+  let ordered = [];
+  let cur = {lat:start.lat, lng:start.lng};
+  while(remaining.length){
+    let bestIdx=0, bestDist=Infinity;
+    remaining.forEach((s,i)=>{ const d = haversineKm(cur.lat, cur.lng, s.lat, s.lng); if(d<bestDist){ bestDist=d; bestIdx=i; } });
+    const next = remaining.splice(bestIdx,1)[0];
+    ordered.push(next);
+    cur = {lat:next.lat, lng:next.lng};
+  }
+  routeOrder = ordered.map(s=>s.id);
+  renderRoutePlanner();
+}
+
+function openRouteInGoogleMaps(stops){
+  if(stops.length===0) return;
+  const dest = stops[stops.length-1];
+  const waypoints = stops.slice(0,-1).map(s=>`${s.lat},${s.lng}`).join('|');
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`;
+  if(waypoints) url += `&waypoints=${encodeURIComponent(waypoints)}`;
+  window.open(url, '_blank');
+}
+
+function drawRouteLine(stops){
+  if(!leafletMap) return;
+  if(routeLine){ leafletMap.removeLayer(routeLine); routeLine=null; }
+  if(stops.length<2) return;
+  routeLine = L.polyline(stops.map(s=>[s.lat, s.lng]), {color:'#0A84FF', weight:3, dashArray:'6,6'}).addTo(leafletMap);
+}
+
 // ============= INIT =============
 async function init(){
   await loadData();
@@ -2294,6 +2766,7 @@ async function init(){
   renderTrack();
   renderInventory();
   renderStats();
+  checkReminders();
 }
 init();
 
